@@ -1,9 +1,10 @@
 package geoip2
 
 import (
-	assert "github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	assert "github.com/stretchr/testify/assert"
 )
 
 func TestWithErrorFunc(t *testing.T) {
@@ -30,9 +31,9 @@ func TestWithErrorFunc(t *testing.T) {
 func TestWithUpdateInterval(t *testing.T) {
 	assert := assert.New(t)
 
-	tests := map[string]struct{
+	tests := map[string]struct {
 		interval time.Duration
-		output time.Duration
+		output   time.Duration
 	}{
 		"success": {interval: time.Hour, output: time.Hour},
 	}
@@ -49,7 +50,7 @@ func TestWithSuccessFunc(t *testing.T) {
 	assert := assert.New(t)
 
 	ch := make(chan int, 1)
-	tests := map[string]struct{
+	tests := map[string]struct {
 		fun    func()
 		ch     chan int
 		output int
@@ -69,11 +70,11 @@ func TestWithSuccessFunc(t *testing.T) {
 func TestWithRetries(t *testing.T) {
 	assert := assert.New(t)
 
-	tests := map[string]struct{
+	tests := map[string]struct {
 		retries int
-		output int
+		output  int
 	}{
-		"success": {retries: 10,  output: 10},
+		"success": {retries: 10, output: 10},
 	}
 
 	for _, t := range tests {
@@ -87,9 +88,9 @@ func TestWithRetries(t *testing.T) {
 func TestWithFirstDownloadWait(t *testing.T) {
 	assert := assert.New(t)
 
-	tests := map[string]struct{
-		first time.Duration
-		output  time.Duration
+	tests := map[string]struct {
+		first  time.Duration
+		output time.Duration
 	}{
 		"success": {first: time.Hour, output: time.Hour},
 	}
