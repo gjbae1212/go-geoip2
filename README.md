@@ -29,7 +29,7 @@ Set to appropriate update interval.
 package main
 import (
   "net"
-  "github.com/gjbae1212/go-geoip2""time"
+  "github.com/gjbae1212/go-geoip2"
   
 )
 
@@ -49,7 +49,7 @@ func main() {
 }
 ```
 ## Inspiration
-This projext was inspired by [*oschwald/geoip2-golang*](https://github.com/oschwald/geoip2-golang) 
+This project was inspired by [*oschwald/geoip2-golang*](https://github.com/oschwald/geoip2-golang) 
 
 ## LICENSE
 This project is following The MIT.
