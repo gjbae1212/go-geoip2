@@ -158,6 +158,8 @@ func (r *downloadReader) runDownloadURL() {
 				}
 				// reset backoff.
 				r.backoff.Reset()
+			} else {
+				fmt.Println("[pass][geoip2] remote-checksum equals local-checksum.")
 			}
 		}
 
