@@ -2,6 +2,7 @@ package geoip2
 
 import (
 	"fmt"
+	"github.com/cenkalti/backoff/v4"
 	"net"
 	"time"
 
@@ -82,7 +83,7 @@ func OpenURL(licenseKey, editionId, targetPath string, opts ...DownloadOption) (
 		opt.apply(cfg)
 	}
 
-	reader := &downloadReader{cfg: cfg}
+	reader := &downloadReader{cfg: cfg, backoff: backoff.NewExponentialBackOff()}
 
 	// if maxmind database is already exist, using it.
 	reader.databaseReload(cfg.targetPath, "")

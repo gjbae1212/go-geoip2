@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	geoip2_golang "github.com/oschwald/geoip2-golang"
 	maxminddb "github.com/oschwald/maxminddb-golang"
 )
@@ -27,6 +28,7 @@ type downloadReader struct {
 	db               *geoip2_golang.Reader
 	cfg              *downloadConfig
 	runDownloadClose chan bool
+	backoff          *backoff.ExponentialBackOff
 }
 
 // ASN is the same method as that "github.com/oschwald/geoip2-golang" is.
@@ -116,6 +118,9 @@ func (r *downloadReader) runDownloadURL() {
 		// getting checksum
 		var remoteChecksum string
 		for i := 0; i < r.cfg.retries; i++ {
+			// wait for backoff interval.
+			time.Sleep(r.backoff.NextBackOff())
+
 			c, err := r.downloadChecksum()
 			if err != nil {
 				r.cfg.errorFunc(fmt.Errorf("[err] runDownloadURL %w", err))
@@ -123,6 +128,8 @@ func (r *downloadReader) runDownloadURL() {
 			}
 			remoteChecksum = strings.TrimSpace(c)
 		}
+		// reset backoff.
+		r.backoff.Reset()
 
 		if remoteChecksum == "" {
 			r.cfg.errorFunc(fmt.Errorf("[err] runDownloadURL checksum download fail"))
@@ -130,6 +137,9 @@ func (r *downloadReader) runDownloadURL() {
 			// if local checksum is equal to remote checksum, updating maxmind database.
 			if remoteChecksum != r.cfg.checksum {
 				for i := 0; i < r.cfg.retries; i++ {
+					// wait for backoff interval.
+					time.Sleep(r.backoff.NextBackOff())
+
 					// downloading database.
 					tempPath, err := r.downloadDatabase()
 					if err != nil {
@@ -146,6 +156,8 @@ func (r *downloadReader) runDownloadURL() {
 					// call a success function.
 					r.cfg.successFunc()
 				}
+				// reset backoff.
+				r.backoff.Reset()
 			}
 		}
 
