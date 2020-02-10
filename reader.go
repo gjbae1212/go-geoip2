@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"fmt"
+
 	"io"
 	"io/ioutil"
 	"net"
@@ -14,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	backoff "github.com/cenkalti/backoff/v4"
 	geoip2_golang "github.com/oschwald/geoip2-golang"
 	maxminddb "github.com/oschwald/maxminddb-golang"
 )
@@ -113,7 +114,6 @@ func (r *downloadReader) Close() error {
 }
 
 func (r *downloadReader) runDownloadURL() {
-	r.runDownloadClose = make(chan bool)
 	for {
 		// getting checksum
 		var remoteChecksum string
@@ -181,41 +181,45 @@ func (r *downloadReader) databaseReload(tempPath, checksum string) error {
 	defer r.Unlock()
 
 	// make directory.
-	dir := filepath.Dir(r.cfg.targetPath)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+	if _, err := os.Stat(r.cfg.storeDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(r.cfg.storeDir, os.ModePerm); err != nil {
 			return fmt.Errorf("[err] databaseReload %w", err)
 		}
 	}
 
 	// backup old database.
-	if info, err := os.Stat(r.cfg.targetPath); info != nil || os.IsExist(err) {
-		// make backup old database
-		os.Rename(r.cfg.targetPath, r.cfg.targetPath+".backup")
+	dbpath := r.cfg.dbPath()
+	dbBackupPath := r.cfg.dbBackupPath()
+	checksumPath := r.cfg.checksumPath()
+	if info, err := os.Stat(dbpath); info != nil || os.IsExist(err) {
+		if dbpath != tempPath {
+			// make backup old database
+			os.Rename(dbpath, dbBackupPath)
+		}
 	}
 
-	// move tempPath to targetPath
-	if err := os.Rename(tempPath, r.cfg.targetPath); err != nil {
+	// move tempPath to dbpath.
+	if err := os.Rename(tempPath, dbpath); err != nil {
 		// delete new database
 		os.RemoveAll(tempPath)
 		// rollback old database
-		os.Rename(r.cfg.targetPath+".backup", r.cfg.targetPath)
+		os.Rename(dbBackupPath, dbpath)
 		return fmt.Errorf("[err] databaseReload %w", err)
 	}
 
-	// open new database
-	db, err := geoip2_golang.Open(r.cfg.targetPath)
+	// open new database.
+	db, err := geoip2_golang.Open(dbpath)
 	if err != nil {
 		// delete new database
-		os.RemoveAll(r.cfg.targetPath)
+		os.RemoveAll(dbpath)
 		// rollback old database
-		os.Rename(r.cfg.targetPath+".backup", r.cfg.targetPath)
+		os.Rename(dbBackupPath, dbpath)
 		return fmt.Errorf("[err] databaseReload %w", err)
 	}
 
 	// delete back old database
-	if info, err := os.Stat(r.cfg.targetPath + ".backup"); info != nil || os.IsExist(err) {
-		os.RemoveAll(r.cfg.targetPath + ".backup")
+	if info, err := os.Stat(dbBackupPath); info != nil || os.IsExist(err) {
+		os.RemoveAll(dbBackupPath)
 	}
 
 	// release old database
@@ -225,6 +229,19 @@ func (r *downloadReader) databaseReload(tempPath, checksum string) error {
 		}
 		r.db = nil
 		r.cfg.checksum = ""
+	}
+
+	if checksum == "" {
+		// read md5 file.
+		if bys, err := ioutil.ReadFile(checksumPath); err == nil {
+			checksum = string(bys)
+		}
+	} else {
+		// write md5 to file.
+		if cpath, err := os.Create(r.cfg.checksumPath()); err == nil {
+			cpath.WriteString(checksum)
+			cpath.Close()
+		}
 	}
 
 	r.db = db

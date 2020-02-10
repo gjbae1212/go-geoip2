@@ -102,3 +102,26 @@ func TestWithFirstDownloadWait(t *testing.T) {
 		assert.Equal(t.output, cfg.firstDownloadWait)
 	}
 }
+
+func TestDownloadConfig_Path(t *testing.T) {
+	assert := assert.New(t)
+
+	tests := map[string]struct {
+		input        *downloadConfig
+		dbpath       string
+		dbBackupPath string
+		checksumPath string
+	}{
+		"success": {input: &downloadConfig{storeDir: "/tmp/geoip2", editionId: "test"},
+			dbpath:       "/tmp/geoip2/test.mmdb",
+			dbBackupPath: "/tmp/geoip2/test.mmdb.backup",
+			checksumPath: "/tmp/geoip2/test.md5",
+		},
+	}
+
+	for _, t := range tests {
+		assert.Equal(t.dbpath, t.input.dbPath())
+		assert.Equal(t.dbBackupPath, t.input.dbBackupPath())
+		assert.Equal(t.checksumPath, t.input.checksumPath())
+	}
+}

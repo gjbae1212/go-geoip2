@@ -33,13 +33,14 @@ func TestMaxmindDownloadURL(t *testing.T) {
 func TestOpen(t *testing.T) {
 	assert := assert.New(t)
 
-	dbpath := os.Getenv("MAXMIND_DB_PATH")
-	if dbpath != "" {
+	storeDir := os.Getenv("MAXMIND_DB_PATH")
+	editionId := os.Getenv("MAXMIND_EDITION_ID")
+	if storeDir  != "" &&editionId != ""{
 		tests := map[string]struct {
 			input string
 			isErr bool
 		}{
-			"success": {input: dbpath, isErr: false},
+			"success": {input: filepath.Join(storeDir, editionId+".mmdb"), isErr: false},
 		}
 
 		for _, t := range tests {
@@ -58,8 +59,7 @@ func TestOpenURL(t *testing.T) {
 	if !ok {
 		panic("No caller information")
 	}
-	case1 := filepath.Join(path.Dir(filename), "case1.mmdb")
-	case2 := filepath.Join(path.Dir(filename), "case2.mmdb")
+	case1 := filepath.Join(path.Dir(filename), "testdata", "openurl")
 	os.RemoveAll(case1)
 
 	if licenseKey != "" && editionId != "" {
@@ -70,7 +70,6 @@ func TestOpenURL(t *testing.T) {
 			isErr      bool
 		}{
 			"case 1": {licenseKey: licenseKey, editionId: editionId, targetPath: case1},
-			"case 2": {licenseKey: licenseKey, editionId: editionId, targetPath: case2},
 		}
 
 		for k, tc := range tests {

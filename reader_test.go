@@ -205,9 +205,8 @@ func TestDownloadReader_Close(t *testing.T) {
 	}
 	dir := filepath.Dir(filename)
 	if licenseKey != "" && editionId != "" {
-		targetPath := filepath.Join(dir, "test.mmdb")
-		os.RemoveAll(targetPath)
-		r, err := OpenURL(licenseKey, editionId, targetPath)
+		storeDir := filepath.Join(dir, "testdata", "close")
+		r, err := OpenURL(licenseKey, editionId, storeDir)
 		assert.NoError(err)
 		assert.NoError(r.Close())
 	}
@@ -221,11 +220,12 @@ func TestCheckUpdateDownload(t *testing.T) {
 	if !ok {
 		panic("No caller information")
 	}
-	dir := filepath.Dir(filename)
 
+	dir := filepath.Dir(filename)
 	if licenseKey != "" && editionId != "" {
-		targetPath := filepath.Join(dir, "test2.mmdb")
-		reader, err := OpenURL(licenseKey, editionId, targetPath,
+		storeDir := filepath.Join(dir, "testdata", "update")
+		os.RemoveAll(storeDir)
+		reader, err := OpenURL(licenseKey, editionId, storeDir,
 			WithUpdateInterval(1*time.Second), WithSuccessFunc(func() {
 				fmt.Println("")
 				fmt.Println("update success")
@@ -252,9 +252,9 @@ func testDownloadReader() (reader Reader) {
 		}
 		dir := filepath.Dir(filename)
 		if licenseKey != "" && editionId != "" {
-			targetPath := filepath.Join(dir, "test.mmdb")
-			os.RemoveAll(targetPath)
-			r, err := OpenURL(licenseKey, editionId, targetPath)
+			storeDir := filepath.Join(dir, "testdata", "loader")
+			os.RemoveAll(storeDir)
+			r, err := OpenURL(licenseKey, editionId, storeDir)
 			if err != nil {
 				panic(err)
 			}
@@ -265,9 +265,10 @@ func testDownloadReader() (reader Reader) {
 }
 
 func BenchmarkDefaultReader_Country(b *testing.B) {
-	dbpath := os.Getenv("MAXMIND_DB_PATH")
-	if dbpath != "" {
-		reader, err := Open(dbpath)
+	storeDir := os.Getenv("MAXMIND_DB_PATH")
+	editionId := os.Getenv("MAXMIND_EDITION_ID")
+	if storeDir != "" && editionId != "" {
+		reader, err := Open(filepath.Join(storeDir, editionId+".mmdb"))
 		if err != nil {
 			panic(err)
 		}
@@ -290,9 +291,8 @@ func BenchmarkDownloadReader_Country(b *testing.B) {
 	dir := filepath.Dir(filename)
 
 	if licenseKey != "" && editionId != "" {
-		targetPath := filepath.Join(dir, "test.mmdb")
-		os.RemoveAll(targetPath)
-		reader, err := OpenURL(licenseKey, editionId, targetPath,
+		storeDir := filepath.Join(dir, "testdata", "bench")
+		reader, err := OpenURL(licenseKey, editionId, storeDir,
 			WithUpdateInterval(3*time.Second), WithSuccessFunc(func() {
 				fmt.Println("")
 				fmt.Println("update success")

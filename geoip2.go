@@ -50,8 +50,8 @@ func Open(file string) (Reader, error) {
 
 // OpenURL returns geoip Reader from maxmind download URL and updates automatically the latest maxmind databases.
 // reference: maxmind URL https://dev.maxmind.com/geoip/geoipupdate/#Direct_Downloads
-func OpenURL(licenseKey, editionId, targetPath string, opts ...DownloadOption) (Reader, error) {
-	if licenseKey == "" || editionId == "" || targetPath == "" {
+func OpenURL(licenseKey, editionId, storeDir string, opts ...DownloadOption) (Reader, error) {
+	if licenseKey == "" || editionId == "" || storeDir == "" {
 		return nil, fmt.Errorf("[err] OpenURL %w", ErrInvalidParameters)
 	}
 
@@ -68,9 +68,11 @@ func OpenURL(licenseKey, editionId, targetPath string, opts ...DownloadOption) (
 	}
 
 	cfg := &downloadConfig{
+		licenseKey:        licenseKey,
+		editionId:         editionId,
 		downloadURL:       downloadURL,
 		checksumURL:       checkSumURL,
-		targetPath:        targetPath,
+		storeDir:          storeDir,
 		firstDownloadWait: 10 * time.Second,
 		updateInterval:    time.Hour,
 		retries:           1,
@@ -83,10 +85,12 @@ func OpenURL(licenseKey, editionId, targetPath string, opts ...DownloadOption) (
 		opt.apply(cfg)
 	}
 
-	reader := &downloadReader{cfg: cfg, backoff: backoff.NewExponentialBackOff()}
+	reader := &downloadReader{
+		runDownloadClose: make(chan bool),
+		cfg: cfg, backoff: backoff.NewExponentialBackOff()}
 
 	// if maxmind database is already exist, using it.
-	reader.databaseReload(cfg.targetPath, "")
+	reader.databaseReload(reader.cfg.dbPath(), "")
 
 	// run update and download logic async
 	go reader.runDownloadURL()

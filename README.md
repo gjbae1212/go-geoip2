@@ -35,7 +35,7 @@ import (
 
 func main() {
    // db, err := Open("local-file-path")
-   db, err := OpenURL("maxmind license key", "GeoLite2-Country", "/tmp/sample.mmdb",
+   db, err := OpenURL("maxmind license key", "GeoLite2-Country", "/tmp",
       geoip2.WithUpdateInterval(6 * time.Hour), geoip2.WithRetries(2), geoip2.WithSuccessFunc(func(){}),...)
    if err != nil {
    	  panic(err)
