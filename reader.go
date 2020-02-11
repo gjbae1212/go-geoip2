@@ -155,6 +155,7 @@ func (r *downloadReader) runDownloadURL() {
 
 					// call a success function.
 					r.cfg.successFunc()
+					break
 				}
 				// reset backoff.
 				r.backoff.Reset()
